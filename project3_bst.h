@@ -693,10 +693,21 @@ void stree<T>::deleteShadowTree(tnodeShadow *t)
 template <typename T>
 T& stree<T>:: min(){
 stnode *min = root;
-
-
+while(min->left != nullptr || min->right != nullptr){
+	if(min->left == nullptr && min->right != nullptr) {
+		min = min->right;
+	}  else if(min->left != nullptr && min->right == nullptr) {
+		min = min->left;
+	}  else if(min->left->nodeValue < min->right->nodeValue){
+		min = min->left;
+	}  else if(min->left->nodeValue > min->right->nodeValue){
+		min = min->right;
+	}
+}
+return min->nodeValue;
 }
 
 
 #endif  // BINARY_SEARCH_TREE_CLASS
+
 
