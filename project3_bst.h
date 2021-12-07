@@ -600,6 +600,8 @@ tnodeShadow *stree<T>::buildShadowTree(stnode<T> *t, int level, int& column)
 		// initialize data members of the new node
 		ostr << t->nodeValue << ends;	// format conversion
 		//cout << t->nodeValue << endl;
+		//*****************************************************************************************************************************Problem area. Uses ostr (never used it before). Need to look into it.
+		//turns everything into ascii symbols and I cant figure out how to turn it back.
 		newNode->nodeValueStr = text;
 		newNode->level = level;
 		newNode->column = column;
