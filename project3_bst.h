@@ -13,6 +13,7 @@
 #include <string>			// node data formatted as a string
 #include <queue>
 #include <utility>		// pair class
+#include <vector>
 
 #include "d_except.h"	// exception classes
 
@@ -40,10 +41,11 @@ class stnode
 
 // objects hold a formatted label string and the level,column
 // coordinates for a shadow tree node
+template<typename T>
 class tnodeShadow
 {
 	public:
-		string nodeValueStr;	// formatted node value
+		T nodeValueStr;	// formatted node value
 		int level,column;
 		tnodeShadow *left, *right;
 
@@ -124,7 +126,7 @@ class stree
 			// largest number of characters required to draw
 			// the value of a node
 
-		T& min();
+		T min();
 
 	private:
 		stnode<T> *root;
@@ -150,13 +152,13 @@ class stree
 			// return a pointer to its node; otherwise, return NULL.
 			// used by find() and erase()
 
-		tnodeShadow *buildShadowTree(stnode<T> *t, int level, int& column);
+		tnodeShadow<T> *buildShadowTree(stnode<T> *t, int level, int& column);
 			// recursive function that builds a subtree of the shadow tree
 			// corresponding to node t of the tree we are drawing. level is the
 			// level-coordinate for the root of the subtree, and column is the
 			// changing column-coordinate of the tree nodes
 
-		void deleteShadowTree(tnodeShadow *t);
+		void deleteShadowTree(tnodeShadow<T> *t);
 			// remove the shadow tree from memory after displayTree()
 			// displays the binary search tree
 };
@@ -580,29 +582,28 @@ typename stree<T>::const_iterator stree<T>::end() const
 
 // recursive inorder scan used to build the shadow tree
 template <typename T>
-tnodeShadow *stree<T>::buildShadowTree(stnode<T> *t, int level, int& column)
+tnodeShadow<T> *stree<T>::buildShadowTree(stnode<T> *t, int level, int& column)
 {
 	// pointer to new shadow tree node
-	tnodeShadow *newNode = NULL;
+	tnodeShadow<T> *newNode = NULL;
 	// text and ostr used to perform format conversion
-	char text[80];
-	ostringstream ostr(text);
+	//char text[80];
+	//ostringstream ostr(text);
 
 	if (t != NULL)
 	{
 		// create the new shadow tree node
-		newNode = new tnodeShadow;
+		newNode = new tnodeShadow<T>;
 
 		// allocate node for left child at next level in tree; attach node
-		tnodeShadow *newLeft = buildShadowTree(t->left, level+1, column);
+		tnodeShadow<T> *newLeft = buildShadowTree(t->left, level+1, column);
 		newNode->left = newLeft;
 
 		// initialize data members of the new node
-		ostr << t->nodeValue << ends;	// format conversion
+		//ostr << t->nodeValue << ends;	// format conversion
 		//cout << t->nodeValue << endl;
 		//*****************************************************************************************************************************Problem area. Uses ostr (never used it before). Need to look into it.
-		//turns everything into ascii symbols and I cant figure out how to turn it back.
-		newNode->nodeValueStr = text;
+		newNode->nodeValueStr = t->nodeValue;
 		newNode->level = level;
 		newNode->column = column;
 
@@ -610,7 +611,7 @@ tnodeShadow *stree<T>::buildShadowTree(stnode<T> *t, int level, int& column)
 		column++;
 
 		// allocate node for right child at next level in tree; attach node
-		tnodeShadow *newRight = buildShadowTree(t->right, level+1, column);
+		tnodeShadow<T> *newRight = buildShadowTree(t->right, level+1, column);
 		newNode->right = newRight;
 	}
 
@@ -630,13 +631,13 @@ void stree<T>::displayTree(int maxCharacters)
 		return;
 
 	// build the shadow tree
-	tnodeShadow *shadowRoot = buildShadowTree(root, level, column);
+	tnodeShadow<T> *shadowRoot = buildShadowTree(root, level, column);
 	// use during the level order scan of the shadow tree
-	tnodeShadow *currNode;
+	tnodeShadow<T> *currNode;
 
    // store siblings of each tnodeShadow object in a queue so that
 	// they are visited in order at the next level of the tree
-   queue<tnodeShadow *> q;
+   queue<tnodeShadow<T> *> q;
 
    // insert the root in the queue and set current level to 0
    q.push(shadowRoot);
@@ -680,7 +681,7 @@ void stree<T>::displayTree(int maxCharacters)
 }
 
 template <typename T>
-void stree<T>::deleteShadowTree(tnodeShadow *t)
+void stree<T>::deleteShadowTree(tnodeShadow<T> *t)
 {
 	// if current root node is not NULL, delete its left subtree,
 	// its right subtree and then the node itself
@@ -692,24 +693,44 @@ void stree<T>::deleteShadowTree(tnodeShadow *t)
 	}
 }
 
+//Repurposed Code from the printout to store node values in a vector then use the vector to find the minimum.
 template <typename T>
-T& stree<T>:: min(){
-stnode *min = root;
-while(min->left != nullptr || min->right != nullptr){
-	if(min->left == nullptr && min->right != nullptr) {
-		min = min->right;
-	}  else if(min->left != nullptr && min->right == nullptr) {
-		min = min->left;
-	}  else if(min->left->nodeValue < min->right->nodeValue){
-		min = min->left;
-	}  else if(min->left->nodeValue > min->right->nodeValue){
-		min = min->right;
+T stree<T>:: min(){
+	if (treeSize == 0){
+			underflowError("stree erase(): tree is empty");
 	}
+
+	vector<tnodeShadow<T> *> tVec;
+	string label;
+	int level = 0, column = 0;
+	int currLevel = 0, currCol = 0;
+	tnodeShadow<T> *shadowRoot = buildShadowTree(root, level, column);
+	tnodeShadow<T> *currNode;
+	queue<tnodeShadow<T> *> q;
+	q.push(shadowRoot);
+while(!q.empty())
+   {
+      currNode = q.front();
+		tVec.push_back(currNode);
+		q.pop();
+		
+      if(currNode->left != NULL){
+			q.push(currNode->left);
+		}
+		
+      if(currNode->right != NULL){
+			q.push(currNode->right);
+	  }
 }
-return min->nodeValue;
+T minT = tVec[0]->nodeValueStr;
+for(int i = 0; i < tVec.size(); i++){
+if(minT > tVec[i]->nodeValueStr){
+	minT = tVec[i]->nodeValueStr;
 }
+}
+	deleteShadowTree(shadowRoot);
+return minT;
+};
 
 
 #endif  // BINARY_SEARCH_TREE_CLASS
-
-
